@@ -1,18 +1,14 @@
 """Gather modules from directories and packages."""
 
-from dataclasses import dataclass
 from importlib.util import find_spec
 from pathlib import Path
 import pkgutil
-from typing import Iterable, Iterator
+from typing import Iterable, Iterator, Optional
 
 import setuptools
 
-
-@dataclass(frozen=True)
-class _Module:
-    full_path: Path
-    full_name: str
+from mypy.build import BuildResult
+from mypy.modulefinder import BuildSource
 
 
 def _find_package_dir(package: str):
@@ -29,11 +25,12 @@ def _gather_modules_in(packages: Iterable[str]) -> Iterator[str]:
                 yield "{}.{}".format(package, module_info.name)
 
 
-def _gather_module_infos(modules: Iterable[str]) -> Iterator[_Module]:
+def _gather_module_infos(modules: Iterable[str]) -> Iterator[BuildSource]:
     for module in modules:
         spec = find_spec(module)
         if spec and spec.origin and spec.origin != "builtin":
-            yield _Module(full_path=Path(spec.origin), full_name=spec.name)
+            with open(spec.origin, "r") as source:
+                yield BuildSource(spec.origin, spec.name, source.read(), None)
 
 
 def _gather_modules(directories: Iterable[str], packages: Iterable[str], modules: Iterable[str]):

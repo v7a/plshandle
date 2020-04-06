@@ -4,7 +4,7 @@ from argparse import ArgumentParser
 import sys
 from typing import Iterable
 
-from plshandle._gather_contracts import _gather_contracts
+from plshandle._gather_contracts import _gather_contracts, MypyCache
 from plshandle._gather_modules import _gather_modules
 
 
@@ -63,6 +63,7 @@ def cli(args):
         print(_verbose_list("sys.path", sys.path))
         print(_verbose_list("gathered modules", modules))
 
-    contracts = tuple(_gather_contracts(modules))
+    cache = MypyCache()
+    contracts = tuple(_gather_contracts(modules, cache))
     if args.verbose:
         print(_verbose_list("gathered contracts", contracts))
