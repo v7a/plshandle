@@ -3,7 +3,7 @@
 from argparse import ArgumentParser
 from dataclasses import dataclass
 import sys
-from typing import Iterable, Optional, List
+from typing import Iterable, Optional, List, Sequence
 
 from mypy.options import Options
 
@@ -69,9 +69,9 @@ class CLIResult:
     """All arguments, gathered modules, contracts and check results."""
 
     args: Arguments
-    modules: Iterable[BuildSource]
-    contracts: Iterable[Contract]
-    results: Iterable[CheckResult]
+    modules: Sequence[BuildSource]
+    contracts: Sequence[Contract]
+    results: Sequence[CheckResult]
 
 
 def cli(args, mypy_options: Options = Options()):
@@ -80,8 +80,9 @@ def cli(args, mypy_options: Options = Options()):
     the decorator. Optionally accepts mypy options.
     """
     args: Arguments = _make_arg_parser(cli.__doc__).parse_args(args)  # type: ignore
-    if args.directory:
-        sys.path[:0] = args.directory
+
+    # be able to find module specs
+    sys.path[:0] = list(args.directory or [])
 
     package_roots: List[str] = []
     modules = tuple(
@@ -90,6 +91,9 @@ def cli(args, mypy_options: Options = Options()):
     if args.verbose:
         print(_verbose_list("sys.path", sys.path))
         print(_verbose_list("gathered modules", modules))
+
+    # have mypy seamlessly find all modules
+    sys.path[:0] = package_roots
 
     mypy_options.package_root = package_roots
     cache = _MypyCache(modules, mypy_options)
