@@ -2,7 +2,7 @@
 
 from typing import List, Iterator, Tuple
 
-from mypy.nodes import Statement
+from mypy.nodes import Statement, FuncDef, ClassDef, MypyFile, SymbolNode
 from mypy.traverser import TraverserVisitor
 
 from mypy_extensions import mypyc_attr
@@ -10,8 +10,9 @@ from mypy_extensions import mypyc_attr
 
 @mypyc_attr(allow_interpreted_subclasses=True)
 class _TrackScopeVisitor(TraverserVisitor):
-    def __init__(self):
+    def __init__(self, root: MypyFile):
         super().__init__()
+        self.root = root
         self.scope: List[Statement] = []
 
     def visit_decorator(self, o):
@@ -55,3 +56,10 @@ class _TrackScopeVisitor(TraverserVisitor):
         for scope in reversed(self.scope):
             yield scope, level
             level += 1
+
+    def determine_current_node(self) -> SymbolNode:
+        """Determine the current node, i.e. a function, class or module."""
+        for stmt, _ in self.traverse_scope():
+            if isinstance(stmt, (FuncDef, ClassDef)):
+                return stmt
+        return self.root

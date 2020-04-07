@@ -40,14 +40,16 @@ class ContractReport:
 
     contract: Contract
     context: Context
+    scope: SymbolNode
     results: Sequence[ExceptionResult]
 
     def __repr__(self):
-        return "ContractReport(contract={}, context={}, results={})".format(
+        return "ContractReport(contract={}, context={}, scope={}, results={})".format(
             self.contract,
             "Context(line={}, column={}, end_line={})".format(
                 self.context.line, self.context.column, self.context.end_line
             ),
+            self.scope.fullname,
             self.results,
         )
 
@@ -61,9 +63,10 @@ class CheckResult:
 
 
 @mypyc_attr(allow_interpreted_subclasses=True)
-class _ReportVisitor(_ResolveAliasVisitor, _TrackScopeVisitor):
+class _ReportVisitor(_TrackScopeVisitor, _ResolveAliasVisitor):
     def __init__(self, source: BuildSource, contracts: Sequence[Contract], cache: _MypyCache):
-        super().__init__()
+        _TrackScopeVisitor.__init__(self, cache.build.files[source.module])
+        _ResolveAliasVisitor.__init__(self)
         self.source = source
         self.contracts = contracts
         self.cache = cache
@@ -71,8 +74,7 @@ class _ReportVisitor(_ResolveAliasVisitor, _TrackScopeVisitor):
 
     def get_result(self):
         """Visit the underlying mypy file and create the result."""
-        tree = self.cache.build.files[self.source.module]
-        self.visit_mypy_file(tree)
+        self.visit_mypy_file(self.root)
 
         return CheckResult(self.source, self.reports)
 
@@ -102,7 +104,7 @@ class _ReportVisitor(_ResolveAliasVisitor, _TrackScopeVisitor):
         for contract in self.contracts:
             if contract.function == function:
                 results = [self._check_exception(e) for e in contract.exception_types]
-                yield ContractReport(contract, context, results)
+                yield ContractReport(contract, context, self.determine_current_node(), results)
 
 
 def _check_contracts(
