@@ -4,15 +4,13 @@ from dataclasses import dataclass
 from typing import Iterable, List
 
 from mypy.modulefinder import BuildSource
-from mypy.nodes import NameExpr, FuncDef, Decorator, CallExpr, SymbolNode
+from mypy.nodes import FuncDef, Decorator, SymbolNode
 
 from mypy_extensions import mypyc_attr
 
 from plshandle._cache import _MypyCache
 from plshandle._resolve_alias import _ResolveAliasVisitor
-
-
-_DECO_QUALIFIER = "plshandle._decorator.plshandle"
+from plshandle._node_utils import _get_contract_exceptions
 
 
 @dataclass(frozen=True, repr=False)
@@ -29,16 +27,6 @@ class Contract:
             self.function.fullname,
             "[{}]".format(", ".join([t.fullname for t in self.exception_types])),
         )
-
-
-def _get_contract_exceptions(visitor: _ResolveAliasVisitor, decorator: Decorator):
-    for deco in decorator.decorators:
-        if isinstance(deco, CallExpr) and deco.callee.fullname == _DECO_QUALIFIER:
-            yield from [
-                visitor.resolve_alias(arg.node)
-                for arg in deco.args
-                if isinstance(arg, NameExpr) and arg.node is not None
-            ]
 
 
 @mypyc_attr(allow_interpreted_subclasses=True)
