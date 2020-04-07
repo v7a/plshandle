@@ -24,7 +24,7 @@ _Reformat all files_
 ```sh
 black plshandle
 ```
-_Or just do this, if you have make installed_
+_Or just do this if you have make installed_
 ```sh
 make check
 ```
