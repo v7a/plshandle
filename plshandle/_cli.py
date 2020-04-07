@@ -2,7 +2,6 @@
 
 from argparse import ArgumentParser
 from dataclasses import dataclass
-from pathlib import Path
 import sys
 from typing import Iterable, Optional, List, Sequence
 
@@ -95,7 +94,6 @@ def cli(args, mypy_options: Options = Options()):
 
     # have mypy seamlessly find all modules
     sys.path[:0] = package_roots
-    # sys.path[:0] = [str(Path(mod.path).parent) for mod in modules]
 
     mypy_options.package_root = package_roots
     cache = _MypyCache(modules, mypy_options)
