@@ -2,8 +2,7 @@
 
 from pathlib import Path
 
-from plshandle import cli
-from plshandle.tests import resource
+from plshandle.tests import cli, resource
 
 
 def test_find_modules():

@@ -2,6 +2,7 @@
 
 from argparse import ArgumentParser
 from dataclasses import dataclass
+from pathlib import Path
 import sys
 from typing import Iterable, Optional, List, Sequence
 
@@ -18,17 +19,17 @@ def _make_arg_parser(description: Optional[str] = None):
     parser.add_argument(
         "-d",
         "--directory",
-        nargs="*",
+        action="append",
         help="additionally gathers all modules from all packages in this directory recursively",
     )
     parser.add_argument(
         "-p",
         "--package",
-        nargs="*",
+        action="append",
         help="additionally gathers all modules from this package recursively",
     )
     parser.add_argument(
-        "-m", "--module", nargs="*", help="additionally include these modules in the check"
+        "-m", "--module", action="append", help="additionally include these modules in the check"
     )
     parser.add_argument(
         "--strict",
@@ -94,6 +95,7 @@ def cli(args, mypy_options: Options = Options()):
 
     # have mypy seamlessly find all modules
     sys.path[:0] = package_roots
+    # sys.path[:0] = [str(Path(mod.path).parent) for mod in modules]
 
     mypy_options.package_root = package_roots
     cache = _MypyCache(modules, mypy_options)
