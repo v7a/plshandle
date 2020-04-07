@@ -13,6 +13,16 @@ def test_find_contracts():
     assert collected_contracts == {
         ("test_find_contracts.module1", "test_find_contracts.module1.foo", ("builtins.KeyError",)),
         (
+            "test_find_contracts.module1",
+            "test_find_contracts.module1.Bar.__init__",
+            ("builtins.AttributeError", "test_find_contracts.module1.CustomError"),
+        ),
+        (
+            "test_find_contracts.module1",
+            "test_find_contracts.module1.Bar.__call__",
+            ("builtins.KeyError",),
+        ),
+        (
             "test_find_contracts.module2",
             "test_find_contracts.module2.bar",
             ("builtins.KeyError", "builtins.TypeError"),
