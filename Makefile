@@ -1,0 +1,11 @@
+lint:
+	pylint plshandle
+
+test:
+	pytest && coverage report --fail-under=100
+
+format:
+	black plshandle
+
+check: lint test format
+	echo "Everything seems fine, ready to commit."

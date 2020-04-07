@@ -1,0 +1,11 @@
+[tool.black]
+line-length = 100
+
+[tool.coverage.run]
+omit = ["**/tests/**"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if args.verbose:"
+]
