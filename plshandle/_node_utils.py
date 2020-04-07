@@ -20,12 +20,20 @@ _PLSHANDLE_QUALIFIER = "plshandle._decorator.plshandle"
 
 def _get_contract_exceptions(visitor: _ResolveAliasVisitor, decorator: Decorator):
     for deco in decorator.decorators:
-        if isinstance(deco, CallExpr) and deco.callee.fullname == _PLSHANDLE_QUALIFIER:
-            yield from [
-                visitor.resolve_alias(arg.node)
-                for arg in deco.args
-                if isinstance(arg, NameExpr) and arg.node is not None
-            ]
+        if (
+            isinstance(deco, CallExpr)
+            and isinstance(deco.callee, NameExpr)
+            and deco.callee.node is not None
+        ):
+            # decorator might be an aliased plshandle.plshandle
+            resolved_callee = visitor.resolve_alias(deco.callee.node)
+
+            if resolved_callee.fullname == _PLSHANDLE_QUALIFIER:
+                yield from [
+                    visitor.resolve_alias(arg.node)
+                    for arg in deco.args
+                    if isinstance(arg, NameExpr) and arg.node is not None
+                ]
 
 
 def _is_unbound_callee(callee: Expression):
