@@ -13,6 +13,7 @@ class _MypyCache:
         # we need these to traverse the AST later on
         options.preserve_asts = True
         options.export_types = True
+        options.check_untyped_defs = True
 
         # make mypy cache type info to improve performance on subsequent runs
         fs_cache = FileSystemCache()

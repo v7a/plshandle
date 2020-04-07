@@ -1,10 +1,12 @@
 """Check whether all contracts are fulfilled in all modules."""
 
 from dataclasses import dataclass
-from typing import Iterable, Sequence, List
+from typing import Iterable, Sequence, List, Optional
 
 from mypy.modulefinder import BuildSource
 from mypy.nodes import (
+    ClassDef,
+    FakeInfo,
     Context,
     NameExpr,
     FuncDef,
@@ -15,6 +17,7 @@ from mypy.nodes import (
     SymbolNode,
     Expression,
     TupleExpr,
+    MemberExpr,
 )
 
 from mypy_extensions import mypyc_attr
@@ -65,8 +68,28 @@ class CheckResult:
     reports: Sequence[ContractReport]
 
 
-def _is_valid_callee(callee: Expression):
+def _is_unbound_callee(callee: Expression):
     return isinstance(callee, NameExpr) and callee.node is not None
+
+
+def _resolve_member_expr(member) -> NameExpr:
+    while isinstance(member, MemberExpr):
+        member = member.expr
+    return member
+
+
+def _get_called_method(callee: MemberExpr, var: NameExpr) -> Optional[FuncDef]:
+    if var.node is None or var.node.type is None or isinstance(var.node.type.type, FakeInfo):
+        return None
+
+    try:
+        node = var.node.type.type.names[callee.name].node
+        if isinstance(node, Decorator):
+            return node.func
+    except KeyError:
+        pass
+
+    return None
 
 
 @mypyc_attr(allow_interpreted_subclasses=True)
@@ -124,17 +147,21 @@ class _ReportVisitor(_ResolveAliasVisitor):
     def visit_call_expr(self, o: CallExpr):
         super().visit_call_expr(o)
 
-        if _is_valid_callee(o.callee):
-            real_callee = self._resolve_callee(o.callee)
-            if real_callee is not None:
-                self._check_contracts(o, real_callee)
+        called_function = None
+        if isinstance(o.callee, MemberExpr) and isinstance(o.callee.expr, NameExpr):
+            called_function = _get_called_method(o.callee, _resolve_member_expr(o.callee))
+        elif _is_unbound_callee(o.callee):
+            called_function = self._resolve_unbound_callee(o.callee)
 
-    def _resolve_callee(self, callee: NameExpr):
-        real_callee = self.resolve_alias(callee.node)
-        if isinstance(real_callee, Decorator):
-            return real_callee.func
-        if isinstance(real_callee, FuncDef):
-            return real_callee
+        if called_function is not None:
+            self._check_contracts(o, called_function)
+
+    def _resolve_unbound_callee(self, callee: NameExpr):
+        resolved = self.resolve_alias(callee.node)
+        if isinstance(resolved, Decorator):
+            return resolved.func
+        if isinstance(resolved, FuncDef):
+            return resolved
         return None
 
     def _check_contracts(self, context: Context, function: FuncDef):

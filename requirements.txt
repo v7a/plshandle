@@ -1,2 +1,2 @@
-mypy >= 0.770
+mypy >= 0.770 --no-binary=:all:
 setuptools >= 46.0
