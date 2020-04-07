@@ -1,60 +1,66 @@
 """Gather contracts defined in modules."""
 
 from dataclasses import dataclass
-from functools import partial
-from typing import Iterable, List, Optional, Dict
-from types import MethodType
+from typing import Iterable, List
 
-from mypy.build import build, BuildResult
-from mypy.errors import Errors
 from mypy.modulefinder import BuildSource
-from mypy.nodes import Expression, NameExpr, FuncDef, Decorator
-from mypy.options import Options
-from mypy.plugin import Plugin
-from mypy.traverser import TraverserVisitor
-from mypy.types import Type
+from mypy.nodes import NameExpr, FuncDef, Decorator, CallExpr, SymbolNode
 
 from mypy_extensions import mypyc_attr
 
-
-_DECORATOR_QUALIFIED_NAME = "plshandle.plshandle"
-
-
-@dataclass
-class MypyCache:
-    """Mutable object that contains the mypy build result after gathering contracts."""
-
-    build: Optional[BuildResult] = None
+from plshandle._cache import _MypyCache
+from plshandle._resolve_alias import _ResolveAliasVisitor
 
 
-@dataclass(frozen=True)
-class _Contract:
+_DECO_QUALIFIER = "plshandle._decorator.plshandle"
+
+
+@dataclass(frozen=True, repr=False)
+class Contract:
+    """Contract created by ``function``, requires handling ``exception_types``."""
+
     source: BuildSource
     function: FuncDef
-    exception_types: Iterable[NameExpr]
+    exception_types: Iterable[SymbolNode]
+
+    def __repr__(self):
+        return "_Contract(source={}, function={}, exception_types={})".format(
+            self.source,
+            self.function.fullname,
+            "[{}]".format(", ".join([t.fullname for t in self.exception_types])),
+        )
 
 
-def _visit_decorator(
-    source: BuildSource,
-    types: Dict[Expression, Type],
-    contracts: List[_Contract],
-    self,
-    decorator: Decorator,
-):
-    print("halo")
-    TraverserVisitor.visit_decorator(self, decorator)
+def _get_contract_exceptions(visitor: _ResolveAliasVisitor, decorator: Decorator):
+    for deco in decorator.decorators:
+        if isinstance(deco, CallExpr) and deco.callee.fullname == _DECO_QUALIFIER:
+            yield from [
+                visitor.resolve_alias(arg.node)
+                for arg in deco.args
+                if isinstance(arg, NameExpr) and arg.node is not None
+            ]
 
 
-def _gather_contracts(sources: Iterable[BuildSource], cache: MypyCache):
-    options = Options()
-    options.preserve_asts = True
-    options.export_types = True
-    cache.build = build(list(sources), options)
+@mypyc_attr(allow_interpreted_subclasses=True)
+class _ContractVisitor(_ResolveAliasVisitor):
+    def __init__(self, source: BuildSource, cache: _MypyCache):
+        super().__init__()
+        self.source = source
+        self.cache = cache
+        self.contracts: List[Contract] = []
 
+    def get_contracts(self):
+        """Visit the underlying mypy file and return all contracts found in it."""
+        self.visit_mypy_file(self.cache.build.files[self.source.module])
+        return self.contracts
+
+    def visit_decorator(self, o: Decorator):
+        super().visit_decorator(o)
+        types = tuple(_get_contract_exceptions(self, o))
+        if types:
+            self.contracts.append(Contract(self.source, o.func, types))
+
+
+def _gather_contracts(sources: Iterable[BuildSource], cache: _MypyCache):
     for source in sources:
-        contracts: List[_Contract] = []
-        visitor = TraverserVisitor()
-        visit_func = partial(_visit_decorator, source, cache.build.types, contracts)
-        visitor.visit_decorator = MethodType(visit_func, visitor)
-        visitor.visit_mypy_file(cache.build.files[source.module])
-        yield from contracts
+        yield from _ContractVisitor(source, cache).get_contracts()
