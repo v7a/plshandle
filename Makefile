@@ -1,5 +1,6 @@
 lint:
 	pylint plshandle
+	mypy -p plshandle
 
 test:
 	pytest && coverage report --fail-under=100
