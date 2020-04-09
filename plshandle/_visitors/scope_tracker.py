@@ -9,7 +9,9 @@ from mypy_extensions import mypyc_attr
 
 
 @mypyc_attr(allow_interpreted_subclasses=True)
-class _TrackScopeVisitor(TraverserVisitor):
+class ScopeTracker(TraverserVisitor):
+    """Keep track of the scope so it can be traversed upwards."""
+
     def __init__(self, root: MypyFile):
         super().__init__()
         self.root = root

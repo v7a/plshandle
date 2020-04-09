@@ -10,7 +10,9 @@ from mypy_extensions import mypyc_attr
 
 
 @mypyc_attr(allow_interpreted_subclasses=True)
-class _ResolveAliasVisitor(TraverserVisitor):
+class AliasResolver(TraverserVisitor):
+    """Resolve aliases while keeping the scope in mind."""
+
     def __init__(self):
         super().__init__()
         self.alias_scopes: List[Dict[SymbolNode, SymbolNode]] = [{}]

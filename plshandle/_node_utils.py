@@ -20,9 +20,9 @@ from mypy.nodes import (
 )
 
 if TYPE_CHECKING:
-    from plshandle._resolve_alias import _ResolveAliasVisitor
+    from plshandle._visitors.alias_resolver import AliasResolver
 else:
-    _ResolveAliasVisitor = Any
+    AliasResolver = Any
 
 
 _PLSHANDLE_QUALIFIER = "plshandle._decorator.plshandle"
@@ -57,7 +57,7 @@ def _resolve_exception_types(deco: CallExpr):
             yield _check_type_info(_resolve_type_info_from_ref(arg), arg)
 
 
-def _get_contract_exceptions(visitor: _ResolveAliasVisitor, decorator: Decorator):
+def _get_contract_exceptions(visitor: AliasResolver, decorator: Decorator):
     for deco in decorator.decorators:
         if (
             isinstance(deco, CallExpr)
@@ -94,7 +94,7 @@ def _get_called_method(callee: MemberExpr, var: NameExpr) -> Optional[FuncDef]:
     return None
 
 
-def _resolve_unbound_callee(visitor: _ResolveAliasVisitor, callee: Expression):
+def _resolve_unbound_callee(visitor: AliasResolver, callee: Expression):
     if isinstance(callee, CallExpr) and isinstance(callee.callee, NameExpr):
         pass  # node -> TypeInfo
 
@@ -136,7 +136,7 @@ def _get_handled_exceptions(types: List[Expression]):
 
 
 def _get_called_function_from_call_expr(
-    visitor: _ResolveAliasVisitor, call: CallExpr
+    visitor: AliasResolver, call: CallExpr
 ) -> Optional[FuncDef]:
     if isinstance(call.callee, MemberExpr) and isinstance(call.callee.expr, NameExpr):
         return _get_called_method(call.callee, _resolve_member_expr(call.callee))

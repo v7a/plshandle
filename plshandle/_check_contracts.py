@@ -10,8 +10,8 @@ from mypy_extensions import mypyc_attr
 
 from plshandle._cache import _MypyCache
 from plshandle._gather_contracts import Contract
-from plshandle._resolve_alias import _ResolveAliasVisitor
-from plshandle._track_scope import _TrackScopeVisitor
+from plshandle._visitors.alias_resolver import AliasResolver
+from plshandle._visitors.scope_tracker import ScopeTracker
 from plshandle._node_utils import (
     _get_contract_exceptions,
     _get_called_function_from_call_expr,
@@ -63,10 +63,10 @@ class CheckResult:
 
 
 @mypyc_attr(allow_interpreted_subclasses=True)
-class _ReportVisitor(_TrackScopeVisitor, _ResolveAliasVisitor):
+class _ReportVisitor(ScopeTracker, AliasResolver):
     def __init__(self, source: BuildSource, contracts: Sequence[Contract], cache: _MypyCache):
-        _TrackScopeVisitor.__init__(self, cache.build.files[source.module])
-        _ResolveAliasVisitor.__init__(self)
+        ScopeTracker.__init__(self, cache.build.files[source.module])
+        AliasResolver.__init__(self)
         self.source = source
         self.contracts = contracts
         self.cache = cache

@@ -9,7 +9,7 @@ from mypy.nodes import FuncDef, Decorator, TypeInfo
 from mypy_extensions import mypyc_attr
 
 from plshandle._cache import _MypyCache
-from plshandle._resolve_alias import _ResolveAliasVisitor
+from plshandle._visitors.alias_resolver import AliasResolver
 from plshandle._node_utils import _get_contract_exceptions
 
 
@@ -30,7 +30,7 @@ class Contract:
 
 
 @mypyc_attr(allow_interpreted_subclasses=True)
-class _ContractVisitor(_ResolveAliasVisitor):
+class _ContractVisitor(AliasResolver):
     def __init__(self, source: BuildSource, cache: _MypyCache):
         super().__init__()
         self.source = source
