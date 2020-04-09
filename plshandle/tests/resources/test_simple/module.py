@@ -5,7 +5,7 @@ class CustomError(Exception):
     pass
 
 
-@plshandle(KeyError, CustomError)
+@plshandle(KeyError, CustomError)  # contract created, requires handling KeyError and CustomError
 def foo():
     pass
 
@@ -27,3 +27,9 @@ class Bar:
                 foo()  # o.k., handled both CustomError and KeyError at level 2
         except (CustomError, KeyError):
             pass
+
+        CustomError()  # no report created for this call
+
+    @classmethod  # no contract created for this decorator
+    def bar2(cls):
+        pass

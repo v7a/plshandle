@@ -14,7 +14,7 @@ pip -r requirements-dev.txt
 ```
 _Ensure there are no linting errors_
 ```sh
-pylint plshandle
+pylint plshandle && mypy -p plshandle
 ```
 _Ensure all tests are successful and code coverage is 100%_
 ```sh

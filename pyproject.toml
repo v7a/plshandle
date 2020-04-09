@@ -2,10 +2,12 @@
 line-length = 100
 
 [tool.coverage.run]
-omit = ["**/tests/**"]
+omit = ["plshandle/tests/**", "plshandle/__main__.py", "plshandle/_decorator.py"]
 
 [tool.coverage.report]
 exclude_lines = [
+    "def __repr__",
     "pragma: no cover",
-    "if args.verbose:"
+    "if args.verbose:",
+    "def _verbose_list",
 ]
