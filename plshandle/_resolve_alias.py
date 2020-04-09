@@ -3,7 +3,7 @@
 from functools import reduce
 from typing import List, Dict
 
-from mypy.nodes import NameExpr, FuncDef, AssignmentStmt, SymbolNode
+from mypy.nodes import NameExpr, FuncDef, AssignmentStmt, SymbolNode, RefExpr
 from mypy.traverser import TraverserVisitor
 
 from mypy_extensions import mypyc_attr
@@ -27,7 +27,7 @@ class _ResolveAliasVisitor(TraverserVisitor):
             len(o.lvalues) == 1
             and isinstance(o.lvalues[0], NameExpr)
             and o.lvalues[0].node is not None
-            and isinstance(o.rvalue, NameExpr)
+            and isinstance(o.rvalue, RefExpr)
             and o.rvalue.node is not None
         ):
             self.alias_scopes[-1][o.lvalues[0].node] = o.rvalue.node

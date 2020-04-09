@@ -3,7 +3,7 @@
 from importlib.util import find_spec
 from pathlib import Path
 import pkgutil
-from typing import Iterable, Iterator, List
+from typing import Iterable, Iterator, List, Optional
 
 import setuptools
 
@@ -26,10 +26,16 @@ def _gather_modules_in(packages: Iterable[str], package_roots: List[str]) -> Ite
                 yield "{}.{}".format(package, module_info.name)
 
 
+def _is_valid_origin(origin: Optional[str]):
+    return origin and (origin == "builtin" or Path(origin).exists())
+
+
 def _gather_module_infos(modules: Iterable[str]) -> Iterator[BuildSource]:
     for module in modules:
         spec = find_spec(module)
-        if spec and spec.origin and spec.origin != "builtin":
+        if not spec or not _is_valid_origin(spec.origin):  # pragma: no cover
+            raise FileNotFoundError("Cannot find location of module '{}'".format(module))
+        if spec.origin != "builtin":  # pragma: no cover
             yield BuildSource(spec.origin, spec.name, None, None)
 
 

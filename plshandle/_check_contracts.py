@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import Iterable, Sequence, List
 
 from mypy.modulefinder import BuildSource
-from mypy.nodes import Context, FuncDef, TryStmt, Decorator, CallExpr, SymbolNode
+from mypy.nodes import Context, FuncDef, TryStmt, Decorator, CallExpr, SymbolNode, TypeInfo
 
 from mypy_extensions import mypyc_attr
 
@@ -14,8 +14,8 @@ from plshandle._resolve_alias import _ResolveAliasVisitor
 from plshandle._track_scope import _TrackScopeVisitor
 from plshandle._node_utils import (
     _get_contract_exceptions,
-    _get_handled_exceptions,
     _get_called_function_from_call_expr,
+    _is_exception_handled,
 )
 
 
@@ -85,15 +85,12 @@ class _ReportVisitor(_TrackScopeVisitor, _ResolveAliasVisitor):
         if called_function is not None:
             self.reports.extend(self._check_contracts(o, called_function))
 
-    def _is_handled(self, try_: TryStmt, exception: SymbolNode):
-        return any(type_ == exception for type_ in _get_handled_exceptions(self, try_.types))
-
-    def _is_propagated(self, decorator: Decorator, exception: SymbolNode):
+    def _is_propagated(self, decorator: Decorator, exception: TypeInfo):
         return any(type_ == exception for type_ in _get_contract_exceptions(self, decorator))
 
-    def _check_exception(self, exception: SymbolNode):
+    def _check_exception(self, exception: TypeInfo):
         for stmt, level in self.traverse_scope():
-            if isinstance(stmt, TryStmt) and self._is_handled(stmt, exception):
+            if isinstance(stmt, TryStmt) and _is_exception_handled(stmt, exception):
                 return ExceptionResult(exception, False, True, level)
             if isinstance(stmt, Decorator) and self._is_propagated(stmt, exception):
                 return ExceptionResult(exception, True, False, 0)

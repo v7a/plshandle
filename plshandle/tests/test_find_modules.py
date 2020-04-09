@@ -2,6 +2,8 @@
 
 from pathlib import Path
 
+import pytest
+
 from plshandle.tests import cli, resource
 
 
@@ -24,3 +26,15 @@ def test_find_modules():
         resource("test_find_modules", "dir", "package2", "module3.py"),
         resource("test_find_modules", "dir", "package2", "subpackage", "module4.py"),
     }
+
+
+def test_invalid_package():
+    """Assert that FNF is raised if a package cannot be found."""
+    with pytest.raises(FileNotFoundError):
+        cli(["-p", "invalidpackagename"])
+
+
+def test_invalid_module():
+    """Assert that MNF is raised if a module cannot be found."""
+    with pytest.raises(ModuleNotFoundError):
+        cli(["-m", "invalidpackage.invalidmodule"])

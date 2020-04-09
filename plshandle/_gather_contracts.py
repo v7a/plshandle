@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import Iterable, List
 
 from mypy.modulefinder import BuildSource
-from mypy.nodes import FuncDef, Decorator, SymbolNode
+from mypy.nodes import FuncDef, Decorator, TypeInfo
 
 from mypy_extensions import mypyc_attr
 
@@ -19,7 +19,7 @@ class Contract:
 
     source: BuildSource
     function: FuncDef
-    exception_types: Iterable[SymbolNode]
+    exception_types: Iterable[TypeInfo]
 
     def __repr__(self):
         return "_Contract(source={}, function={}, exception_types={})".format(
