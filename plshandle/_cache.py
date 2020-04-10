@@ -8,7 +8,9 @@ from mypy.options import Options
 from mypy.modulefinder import BuildSource
 
 
-class _MypyCache:
+class MypyCache:
+    """Cache mypy's AST and type maps."""
+
     def __init__(self, sources: Iterable[BuildSource], options: Options = Options()):
         # we need these to traverse the AST later on
         options.preserve_asts = True

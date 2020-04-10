@@ -1,4 +1,4 @@
-"""Gather contracts defined in modules."""
+"""Collect contracts defined in modules."""
 
 from dataclasses import dataclass
 from typing import Iterable, List
@@ -8,7 +8,7 @@ from mypy.nodes import FuncDef, Decorator, TypeInfo
 
 from mypy_extensions import mypyc_attr
 
-from plshandle._cache import _MypyCache
+from plshandle._cache import MypyCache
 from plshandle._visitors.alias_resolver import AliasResolver
 from plshandle._utils.resolve_contract import resolve_contract
 
@@ -30,25 +30,21 @@ class Contract:
 
 
 @mypyc_attr(allow_interpreted_subclasses=True)
-class _ContractVisitor(AliasResolver):
-    def __init__(self, source: BuildSource, cache: _MypyCache):
+class ContractCollector(AliasResolver):
+    """Collect contracts defined in the given sources."""
+
+    def __init__(self, sources: Iterable[BuildSource], cache: MypyCache):
         super().__init__()
-        self.source = source
-        self.cache = cache
+        self.types = cache.build.types
         self.contracts: List[Contract] = []
 
-    def get_contracts(self):
-        """Visit the underlying mypy file and return all contracts found in it."""
-        self.visit_mypy_file(self.cache.build.files[self.source.module])
-        return self.contracts
+        # traverse all nodes and populate self.contracts
+        for source in sources:
+            self.source = source
+            self.visit_mypy_file(cache.build.files[source.module])
 
     def visit_decorator(self, o: Decorator):
         super().visit_decorator(o)
-        types = tuple(resolve_contract(o, self, self.cache.build.types, self.source.module))
+        types = tuple(resolve_contract(o, self, self.types, self.source.module))
         if types:
             self.contracts.append(Contract(self.source, o.func, types))
-
-
-def _gather_contracts(sources: Iterable[BuildSource], cache: _MypyCache):
-    for source in sources:
-        yield from _ContractVisitor(source, cache).get_contracts()

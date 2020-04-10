@@ -1,15 +1,15 @@
 """Check whether all contracts are fulfilled in all modules."""
 
 from dataclasses import dataclass
-from typing import Iterable, Sequence, List
+from typing import Sequence, List
 
 from mypy.modulefinder import BuildSource
 from mypy.nodes import Context, FuncDef, TryStmt, Decorator, CallExpr, SymbolNode, TypeInfo
 
 from mypy_extensions import mypyc_attr
 
-from plshandle._cache import _MypyCache
-from plshandle._gather_contracts import Contract
+from plshandle._cache import MypyCache
+from plshandle._visitors.contract_collector import Contract
 from plshandle._visitors.alias_resolver import AliasResolver
 from plshandle._visitors.scope_tracker import ScopeTracker
 from plshandle._utils.resolve_called_function import resolve_called_function
@@ -60,41 +60,58 @@ class CheckResult:
     reports: Sequence[ContractReport]
 
 
+@dataclass(init=False)
+class _CheckerState:
+    # ugly per-source state
+    module: str
+    root: SymbolNode
+    reports: List[ContractReport]
+
+    def __init__(self, source: BuildSource, cache: MypyCache):
+        self.module = source.module
+        self.root = cache.build.files[source.module]
+        self.reports = []
+
+
 @mypyc_attr(allow_interpreted_subclasses=True)
-class _ReportVisitor(ScopeTracker, AliasResolver):
-    def __init__(self, source: BuildSource, contracts: Sequence[Contract], cache: _MypyCache):
-        ScopeTracker.__init__(self, cache.build.files[source.module])
-        AliasResolver.__init__(self)
-        self.source = source
+class ContractChecker(ScopeTracker, AliasResolver):
+    """Check whether all contracts are fulfilled in all modules."""
+
+    def __init__(
+        self, contracts: Sequence[Contract], sources: Sequence[BuildSource], cache: MypyCache
+    ):
+        super().__init__()
         self.contracts = contracts
         self.cache = cache
-        self.reports: List[ContractReport] = []
+        self.results: List[CheckResult] = []
 
-    def get_result(self):
-        """Visit the underlying mypy file and create the result."""
-        self.visit_mypy_file(self.root)
-
-        return CheckResult(self.source, self.reports)
+        # traverse all nodes and populate self.results
+        for source in sources:
+            self.current_state = _CheckerState(source, cache)
+            self.visit_mypy_file(self.current_state.root)
+            self.results.append(CheckResult(source, self.current_state.reports))
 
     def visit_call_expr(self, o: CallExpr):
         super().visit_call_expr(o)
 
-        called_function = resolve_called_function(o, self, self.cache.build.types)
-        if called_function is not None:
-            self.reports.extend(self._get_reports(o, called_function))
+        self.current_state.reports.extend(
+            self._get_reports(o, resolve_called_function(o, self, self.cache.build.types))
+        )
 
     def _is_propagated(self, decorator: Decorator, exception: TypeInfo):
         return any(
             type_ == exception
             for type_ in resolve_contract(
-                decorator, self, self.cache.build.types, self.source.module
+                decorator, self, self.cache.build.types, self.current_state.module
             )
         )
 
     def _is_handled(self, try_: TryStmt, exception: TypeInfo):
         return any(
             type_ == exception
-            for type_ in resolve_handled_types(try_, self.cache.build.types, self.source.module)
+            for type_ in resolve_handled_types(
+                try_, self.cache.build.types, self.current_state.module
+            )
         )
 
     def _check_exception(self, exception: TypeInfo):
@@ -109,12 +126,9 @@ class _ReportVisitor(ScopeTracker, AliasResolver):
     def _get_reports(self, context: Context, function: FuncDef):
         for contract in self.contracts:
             if contract.function == function:
-                results = [self._check_exception(e) for e in contract.exception_types]
-                yield ContractReport(contract, context, self.determine_current_node(), results)
-
-
-def _check_contracts(
-    contracts: Sequence[Contract], sources: Iterable[BuildSource], cache: _MypyCache
-):
-    for source in sources:
-        yield _ReportVisitor(source, contracts, cache).get_result()
+                yield ContractReport(
+                    contract,
+                    context,
+                    self.determine_current_node(self.current_state.root),
+                    [self._check_exception(e) for e in contract.exception_types],
+                )

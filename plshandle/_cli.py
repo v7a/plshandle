@@ -3,13 +3,13 @@
 from argparse import ArgumentParser
 from dataclasses import dataclass
 import sys
-from typing import Iterable, Optional, List, Sequence
+from typing import Iterable, Optional, List, Sequence, Tuple
 
 from mypy.options import Options
 
-from plshandle._cache import _MypyCache
-from plshandle._check_contracts import _check_contracts, CheckResult
-from plshandle._gather_contracts import _gather_contracts, Contract
+from plshandle._cache import MypyCache
+from plshandle._visitors.contract_checker import ContractChecker, CheckResult
+from plshandle._visitors.contract_collector import ContractCollector, Contract
 from plshandle._gather_modules import _gather_modules, BuildSource
 
 
@@ -19,13 +19,13 @@ def _make_arg_parser(description: Optional[str] = None):
         "-d",
         "--directory",
         action="append",
-        help="additionally gathers all modules from all packages in this directory recursively",
+        help="additionally collects all modules from all packages in this directory recursively",
     )
     parser.add_argument(
         "-p",
         "--package",
         action="append",
-        help="additionally gathers all modules from this package recursively",
+        help="additionally collects all modules from this package recursively",
     )
     parser.add_argument(
         "-m", "--module", action="append", help="additionally include these modules in the check"
@@ -66,12 +66,49 @@ class Arguments:
 
 @dataclass(frozen=True)
 class CLIResult:
-    """All arguments, gathered modules, contracts and check results."""
+    """All arguments, collected modules, contracts and check results."""
 
     args: Arguments
     modules: Sequence[BuildSource]
     contracts: Sequence[Contract]
     results: Sequence[CheckResult]
+
+
+def _collect_modules_and_package_roots(args: Arguments) -> Tuple[Sequence[BuildSource], List[str]]:
+    sys.path[:0] = list(args.directory or [])  # be able to find module specs
+
+    package_roots: List[str] = []
+    modules = tuple(
+        _gather_modules(args.directory or [], args.package or [], args.module or [], package_roots)
+    )
+    if args.verbose:
+        print(_verbose_list("sys.path", sys.path))
+        print(_verbose_list("collected modules", modules))
+
+    return modules, package_roots
+
+
+def _make_cache(modules: Sequence[BuildSource], package_roots: List[str], options: Options):
+    sys.path[:0] = package_roots  # be able to find all modules
+
+    options.package_root = package_roots
+    return MypyCache(modules, options)
+
+
+def _collect_contracts(modules: Sequence[BuildSource], cache: MypyCache, args: Arguments):
+    contracts = ContractCollector(modules, cache).contracts
+    if args.verbose:
+        print(_verbose_list("collected contracts", contracts))
+    return contracts
+
+
+def _check_contracts(
+    contracts: Sequence[Contract], modules: Sequence[BuildSource], cache: MypyCache, args: Arguments
+):
+    results = ContractChecker(contracts, modules, cache).results
+    if args.verbose:
+        print(_verbose_list("contract check results", results))
+    return results
 
 
 def cli(args, mypy_options: Options = Options()):
@@ -80,29 +117,8 @@ def cli(args, mypy_options: Options = Options()):
     the decorator. Optionally accepts mypy options.
     """
     args: Arguments = _make_arg_parser(cli.__doc__).parse_args(args)  # type: ignore
-
-    # be able to find module specs
-    sys.path[:0] = list(args.directory or [])
-
-    package_roots: List[str] = []
-    modules = tuple(
-        _gather_modules(args.directory or [], args.package or [], args.module or [], package_roots)
-    )
-    if args.verbose:
-        print(_verbose_list("sys.path", sys.path))
-        print(_verbose_list("gathered modules", modules))
-
-    # have mypy seamlessly find all modules
-    sys.path[:0] = package_roots
-
-    mypy_options.package_root = package_roots
-    cache = _MypyCache(modules, mypy_options)
-    contracts = tuple(_gather_contracts(modules, cache))
-    if args.verbose:
-        print(_verbose_list("gathered contracts", contracts))
-
-    results = tuple(_check_contracts(contracts, modules, cache))
-    if args.verbose:
-        print(_verbose_list("contract check results", results))
-
+    modules, package_roots = _collect_modules_and_package_roots(args)
+    cache = _make_cache(modules, package_roots, mypy_options)
+    contracts = _collect_contracts(modules, cache, args)
+    results = _check_contracts(contracts, modules, cache, args)
     return CLIResult(args, modules, contracts, results)
