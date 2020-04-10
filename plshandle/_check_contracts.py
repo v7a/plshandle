@@ -12,11 +12,9 @@ from plshandle._cache import _MypyCache
 from plshandle._gather_contracts import Contract
 from plshandle._visitors.alias_resolver import AliasResolver
 from plshandle._visitors.scope_tracker import ScopeTracker
-from plshandle._node_utils import (
-    _get_contract_exceptions,
-    _get_called_function_from_call_expr,
-    _is_exception_handled,
-)
+from plshandle._utils.resolve_called_function import resolve_called_function
+from plshandle._utils.resolve_contract import resolve_contract
+from plshandle._utils.resolve_handled_types import resolve_handled_types
 
 
 @dataclass(frozen=True, repr=False)
@@ -81,23 +79,34 @@ class _ReportVisitor(ScopeTracker, AliasResolver):
     def visit_call_expr(self, o: CallExpr):
         super().visit_call_expr(o)
 
-        called_function = _get_called_function_from_call_expr(self, o)
+        called_function = resolve_called_function(o, self, self.cache.build.types)
         if called_function is not None:
-            self.reports.extend(self._check_contracts(o, called_function))
+            self.reports.extend(self._get_reports(o, called_function))
 
     def _is_propagated(self, decorator: Decorator, exception: TypeInfo):
-        return any(type_ == exception for type_ in _get_contract_exceptions(self, decorator))
+        return any(
+            type_ == exception
+            for type_ in resolve_contract(
+                decorator, self, self.cache.build.types, self.source.module
+            )
+        )
+
+    def _is_handled(self, try_: TryStmt, exception: TypeInfo):
+        return any(
+            type_ == exception
+            for type_ in resolve_handled_types(try_, self.cache.build.types, self.source.module)
+        )
 
     def _check_exception(self, exception: TypeInfo):
         for stmt, level in self.traverse_scope():
-            if isinstance(stmt, TryStmt) and _is_exception_handled(stmt, exception):
+            if isinstance(stmt, TryStmt) and self._is_handled(stmt, exception):
                 return ExceptionResult(exception, False, True, level)
             if isinstance(stmt, Decorator) and self._is_propagated(stmt, exception):
                 return ExceptionResult(exception, True, False, 0)
 
         return ExceptionResult(exception, False, False, 0)
 
-    def _check_contracts(self, context: Context, function: FuncDef):
+    def _get_reports(self, context: Context, function: FuncDef):
         for contract in self.contracts:
             if contract.function == function:
                 results = [self._check_exception(e) for e in contract.exception_types]

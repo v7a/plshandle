@@ -10,7 +10,7 @@ from mypy_extensions import mypyc_attr
 
 from plshandle._cache import _MypyCache
 from plshandle._visitors.alias_resolver import AliasResolver
-from plshandle._node_utils import _get_contract_exceptions
+from plshandle._utils.resolve_contract import resolve_contract
 
 
 @dataclass(frozen=True, repr=False)
@@ -44,7 +44,7 @@ class _ContractVisitor(AliasResolver):
 
     def visit_decorator(self, o: Decorator):
         super().visit_decorator(o)
-        types = tuple(_get_contract_exceptions(self, o))
+        types = tuple(resolve_contract(o, self, self.cache.build.types, self.source.module))
         if types:
             self.contracts.append(Contract(self.source, o.func, types))
 

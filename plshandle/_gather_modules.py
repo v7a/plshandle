@@ -35,7 +35,7 @@ def _gather_module_infos(modules: Iterable[str]) -> Iterator[BuildSource]:
         spec = find_spec(module)
         if not spec or not _is_valid_origin(spec.origin):  # pragma: no cover
             raise FileNotFoundError("Cannot find location of module '{}'".format(module))
-        if spec.origin != "builtin":  # pragma: no cover
+        if spec.origin != "builtin":  # pragma: no branch
             yield BuildSource(spec.origin, spec.name, None, None)
 
 
