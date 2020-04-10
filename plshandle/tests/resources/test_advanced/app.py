@@ -4,10 +4,15 @@ from test_advanced.errors import CustomError
 from test_advanced.utils import foo, Bar
 
 
+foo_alias_1 = foo
+foo_alias_2 = foo_alias_1
+
+
 try:
     for i in range(0):
         while False:
-            foo()  #  nested in multiple statements, scope of call correctly determined (module)
+            with open("file", "w"):
+                foo_alias_2()  #  nested in multiple statements, scope of call correctly determined
 except CustomError:
     pass
 

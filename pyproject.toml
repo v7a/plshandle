@@ -11,3 +11,6 @@ exclude_lines = [
     "if args.verbose:",
     "def _verbose_list",
 ]
+partial_branches = [
+    "pragma: no branch",
+]

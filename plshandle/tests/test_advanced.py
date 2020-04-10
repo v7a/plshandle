@@ -11,26 +11,26 @@ def test_advanced():
         Contract(
             function="test_advanced.utils.foo",
             scope="test_advanced.app",
-            line=10,
+            line=15,
             results=(
                 Result(
                     "test_advanced.errors.CustomError",
                     is_propagated=False,
                     is_handled=True,
-                    level=3,
+                    level=4,
                 ),
             ),
         ),
         Contract(
             function="test_advanced.utils.Bar.__call__",
             scope="test_advanced.app",
-            line=16,
+            line=21,
             results=(Result("re.error", is_propagated=False, is_handled=False, level=0),),
         ),
         Contract(
             function="test_advanced.utils.Bar.__call__",
             scope="test_advanced.app",
-            line=19,
+            line=24,
             results=(Result("re.error", is_propagated=False, is_handled=True, level=1),),
         ),
     }

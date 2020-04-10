@@ -33,3 +33,6 @@ class Bar:
     @classmethod  # no contract created for this decorator
     def bar2(cls):
         pass
+
+    def __call__(self):
+        pass
