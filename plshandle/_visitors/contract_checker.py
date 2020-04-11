@@ -12,7 +12,7 @@ from plshandle._cache import MypyCache
 from plshandle._visitors.contract_collector import Contract
 from plshandle._visitors.alias_resolver import AliasResolver
 from plshandle._visitors.scope_tracker import ScopeTracker
-from plshandle._utils.resolve_called_function import resolve_called_function
+from plshandle._utils.resolve_called_functions import resolve_called_functions
 from plshandle._utils.resolve_contract import resolve_contract
 from plshandle._utils.resolve_handled_types import resolve_handled_types
 
@@ -94,9 +94,8 @@ class ContractChecker(ScopeTracker, AliasResolver):
     def visit_call_expr(self, o: CallExpr):
         super().visit_call_expr(o)
 
-        self.current_state.reports.extend(
-            self._get_reports(o, resolve_called_function(o, self, self.cache.build.types))
-        )
+        functions = tuple(resolve_called_functions(o, self, self.cache.build.types))
+        self.current_state.reports.extend(self._get_reports(o, functions))
 
     def _is_propagated(self, decorator: Decorator, exception: TypeInfo):
         return any(
@@ -123,9 +122,9 @@ class ContractChecker(ScopeTracker, AliasResolver):
 
         return ExceptionResult(exception, False, False, 0)
 
-    def _get_reports(self, context: Context, function: FuncDef):
+    def _get_reports(self, context: Context, functions: Sequence[FuncDef]):
         for contract in self.contracts:
-            if contract.function == function:
+            if contract.function in functions:
                 yield ContractReport(
                     contract,
                     context,

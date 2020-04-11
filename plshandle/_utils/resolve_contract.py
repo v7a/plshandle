@@ -6,7 +6,7 @@ from mypy.types import Type
 from mypy.nodes import Context, CallExpr, Expression, Decorator, TypeInfo
 
 from plshandle._visitors.alias_resolver import AliasResolver
-from plshandle._utils.resolve_called_function import resolve_called_function
+from plshandle._utils.resolve_called_functions import resolve_called_functions
 from plshandle._utils.resolve_exception_types import resolve_exception_types
 
 
@@ -31,6 +31,6 @@ def resolve_contract(
     """
     for call in decorator.decorators:
         if isinstance(call, CallExpr):  # pragma: no branch
-            function = resolve_called_function(call, resolver, types)
-            if function and function.fullname == _PLSHANDLE_QUALIFIER:
-                yield from _get_exception_types(call, types, decorator, module)
+            for function in resolve_called_functions(call, resolver, types):
+                if function.fullname == _PLSHANDLE_QUALIFIER:
+                    yield from _get_exception_types(call, types, decorator, module)
