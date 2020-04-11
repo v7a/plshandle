@@ -10,6 +10,14 @@ def _is_exception_type(type_: TypeInfo):
     return any(sub.fullname == "builtins.BaseException" for sub in type_.mro)  # pragma: no branch
 
 
+def _raise_invalid_type(type_: Type, context: Optional[Context], module: Optional[str]):
+    raise TypeError(
+        "{}:{}: Invalid exception type '{}'".format(
+            module or "?", context.line if context else "?", type_
+        )
+    )
+
+
 def resolve_exception_types(
     type_: Type, context: Optional[Context], module: Optional[str]
 ) -> Iterator[TypeInfo]:
@@ -17,20 +25,15 @@ def resolve_exception_types(
     mypy.types.Type. Raises ``TypeError`` if failed to resolve.
     """
     if isinstance(type_, CallableType):
-        # sometimes mypy will resolve a reference to a type (e.g. KeyError in something(KeyError))
-        # as CallableType(Type.__init__)
         type_ = TypeType(type_.ret_type, line=type_.line, column=type_.column)
 
     if isinstance(type_, TupleType):
-        for item in type_.items:
+        for item in type_.items:  # pragma: no branch
             yield from resolve_exception_types(item, context, module)
-
-    elif isinstance(type_, TypeType) and isinstance(type_.item, Instance):  # pragma: no branch
+    elif isinstance(type_, TypeType) and isinstance(type_.item, Instance):
         if _is_exception_type(type_.item.type):
             yield type_.item.type
         else:
-            raise TypeError(
-                "{}:{}: Type '{}' is not an exception type".format(
-                    module or "?", context.line if context else "?", type_
-                )
-            )
+            _raise_invalid_type(type_, context, module)
+    else:
+        _raise_invalid_type(type_, context, module)

@@ -30,7 +30,7 @@ def resolve_contract(
     no contract was defined.
     """
     for call in decorator.decorators:
-        if isinstance(call, CallExpr):  # pragma: no branch
+        if isinstance(call, CallExpr):
             for function in resolve_called_functions(call, resolver, types):
                 if function.fullname == _PLSHANDLE_QUALIFIER:
                     yield from _get_exception_types(call, types, decorator, module)

@@ -55,7 +55,7 @@ def _try_find_in_type_map(callee: Expression, types: Dict[Expression, Type]) -> 
         if isinstance(callee, MemberExpr):
             callee = callee.expr
         return types[callee]
-    except KeyError:
+    except KeyError:  # pragma: no cover
         return None
 
 
@@ -75,7 +75,7 @@ def _try_resolve_method_call(callee: Expression) -> Optional[Type]:
 
     if isinstance(callee, CallExpr):
         info = _type_info_from_expr(callee.callee)  # Class()() and Class().method()
-        if info:
+        if info:  # pragma: no branch
             return Instance(info, [])
     else:
         info = _type_info_from_expr(callee)
@@ -115,7 +115,7 @@ def _resolve_class_types(
 
 
 def _try_get_callee_method(callee: Expression) -> Optional[str]:
-    if isinstance(callee, MemberExpr):  # pragma: no cover
+    if isinstance(callee, MemberExpr):
         return callee.name
     return None
 

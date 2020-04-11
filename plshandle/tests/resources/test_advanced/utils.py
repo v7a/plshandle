@@ -9,6 +9,19 @@ AliasedError = errors.CustomError
 AliasedAliasedError = AliasedError
 
 
+def random_decorator():
+    def wrapper(func):
+        return func
+
+    return wrapper
+
+
+def random_decorator_2(func):
+    return func
+
+
+@random_decorator()
+@random_decorator_2
 @serious_business_alias(AliasedAliasedError)
 def foo():
     pass
