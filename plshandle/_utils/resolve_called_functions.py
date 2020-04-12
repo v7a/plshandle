@@ -66,7 +66,7 @@ def _type_info_from_expr(expr: Expression) -> Optional[TypeInfo]:
 
 
 def _try_resolve_method_call(callee: Expression) -> Optional[Type]:
-    # Mypy does not infer the return type of __init__ correctly if __init__ it is not in
+    # Mypy does not infer the type of expression ``Class()`` correctly if __init__ it is not in
     # mro[0] (maybe that is intended behavior), so manually resolve it. TBD: maybe assist mypy
     # and store it in type map beforehand?
 

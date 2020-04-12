@@ -10,5 +10,5 @@ def foo():
 
 try:
     foo()
-except Type[int]:
+except int:
     pass

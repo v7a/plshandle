@@ -2,7 +2,7 @@
 
 from typing import Optional, Iterator
 
-from mypy.types import Type, Instance, TypeType, TupleType, CallableType
+from mypy.types import Type, Instance, TypeType, TupleType, CallableType, Overloaded
 from mypy.nodes import Context, TypeInfo
 
 
@@ -24,16 +24,16 @@ def resolve_exception_types(
     """Attempt to resolve a Type[BaseException] or Tuple[Type[BaseException], ...] (nested) from a
     mypy.types.Type. Raises ``TypeError`` if failed to resolve.
     """
+    if isinstance(type_, Overloaded):
+        type_ = type_.items()[0]
     if isinstance(type_, CallableType):
         type_ = TypeType(type_.ret_type, line=type_.line, column=type_.column)
 
     if isinstance(type_, TupleType):
         for item in type_.items:  # pragma: no branch
             yield from resolve_exception_types(item, context, module)
-    elif isinstance(type_, TypeType) and isinstance(type_.item, Instance):
+    elif isinstance(type_, TypeType) and isinstance(type_.item, Instance):  # pragma: no branch
         if _is_exception_type(type_.item.type):
             yield type_.item.type
         else:
             _raise_invalid_type(type_, context, module)
-    else:
-        _raise_invalid_type(type_, context, module)
