@@ -106,8 +106,8 @@ def _resolve_class_types(
         elif isinstance(type_, UnionType):
             for item in type_.items:
                 yield from _resolve_class_types(item, fallback_method)
-        elif isinstance(type_, FunctionLike):
-            if isinstance(type_, Overloaded):
+        elif isinstance(type_, FunctionLike):  # pragma: no branch
+            if isinstance(type_, Overloaded):  # pragma: no branch
                 type_ = type_.items()[0]
             # just in case Python ever receives another function-like statement
             if isinstance(type_, CallableType):  # pragma: no branch
