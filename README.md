@@ -1,5 +1,5 @@
 # plshandle
-Create a contract between caller and function that requires the caller to handle specific
+Create an explicit contract between caller and function that requires the caller to handle specific
 exceptions raised by the function.
 
 ### Why
@@ -17,6 +17,12 @@ def get_item(key):
     return {}[key]
 
 get_item(0)  # tool reports this call expression as a contract violation
+```
+It is also possible to propagate errors, similar to Java:
+```py
+@plshandle(KeyError)
+def foo():
+    return get_item(0)  # o.k., KeyError is propagated, caller's responsibility to handle it
 ```
 
 ### Things to consider
@@ -45,7 +51,7 @@ get_item(0)  # tool reports this call expression as a contract violation
           pass
 
   obj = Derived()
-  obj.foo()  # nothing reported, mypy infers obj as type "Base"
+  obj.foo()  # nothing reported, mypy infers obj as type "Any"
   obj: Derived = Derived()
   obj.foo()  # o.k., mypy infers obj as type "Derived"
 

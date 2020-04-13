@@ -1,6 +1,6 @@
 """Mypy build cache."""
 
-from typing import Iterable
+from typing import Sequence
 
 from mypy.build import build
 from mypy.fscache import FileSystemCache
@@ -11,7 +11,7 @@ from mypy.modulefinder import BuildSource
 class MypyCache:
     """Cache mypy's AST and type maps."""
 
-    def __init__(self, sources: Iterable[BuildSource], options: Options = Options()):
+    def __init__(self, sources: Sequence[BuildSource], options: Options = Options()):
         # we need these to traverse the AST later on
         options.preserve_asts = True
         options.export_types = True
@@ -21,4 +21,4 @@ class MypyCache:
         fs_cache = FileSystemCache()
         fs_cache.set_package_root(options.package_root)
 
-        self.build = build(list(sources), options, None, None, fs_cache)
+        self.build = build(list(sources), options, None, None, fs_cache) if sources else None
