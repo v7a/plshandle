@@ -46,22 +46,26 @@ def _make_arg_parser(description: Optional[str] = None):
         action="store_true",
         help="prints additional information during module processing",
     )
+    parser.add_argument(
+        "--version",
+        action="store_true",
+        help="prints the version of plshandle and your Python interpreter",
+    )
     return parser
 
 
-def _verbose_list(prefix: str, items: Iterable):
-    return "{}:\n- {}\n".format(prefix, "\n- ".join([repr(item) for item in items]) or "<none>")
-
-
+@dataclass(frozen=True)
 class Arguments:
     """Parsed arguments."""
 
-    directory: Optional[Iterable[str]]
-    package: Optional[Iterable[str]]
-    module: Optional[Iterable[str]]
-    strict: bool  #: try block + handlers must be one level above call
-    json: bool  #: print error information as JSON array to stderr
-    verbose: bool  #: verbose output
+    directory: Optional[Iterable[str]] = None
+    package: Optional[Iterable[str]] = None
+    module: Optional[Iterable[str]] = None
+    strict: bool = False  #: try block + handlers must be one level above call
+    json: bool = False  #: print checked contracts as JSON array to stdout
+    verbose: bool = False  #: verbose output
+    version: bool = False
+    help_requested: bool = False
 
 
 @dataclass(frozen=True)
@@ -81,12 +85,6 @@ def _collect_modules_and_package_roots(args: Arguments) -> Tuple[Sequence[BuildS
     modules = tuple(
         _gather_modules(args.directory or [], args.package or [], args.module or [], package_roots)
     )
-    if args.verbose:
-        print(_verbose_list("sys.path", sys.path))
-        print(_verbose_list("collected modules", modules))
-    if not modules:
-        print("error: No modules found")
-
     return modules, package_roots
 
 
@@ -97,36 +95,21 @@ def _make_cache(modules: Sequence[BuildSource], package_roots: List[str], option
     return MypyCache(modules, options)
 
 
-def _collect_contracts(modules: Sequence[BuildSource], cache: MypyCache, args: Arguments):
-    contracts = ContractCollector(modules, cache).contracts
-    if args.verbose:
-        print(_verbose_list("collected contracts", contracts))
-    if not contracts:
-        print("error: No contracts found")
-
-    return contracts
-
-
-def _check_contracts(
-    contracts: Sequence[Contract], modules: Sequence[BuildSource], cache: MypyCache, args: Arguments
-):
-    results = ContractChecker(contracts, modules, cache).results
-    if args.verbose:
-        print(_verbose_list("contract check results", results))
-    if not any(result.reports for result in results):
-        print("error: No contracts checked")
-
-    return results
-
-
 def cli(args, mypy_options: Options = Options()):
     """Collect all functions decorated with 'plshandle' for all provided
     modules/packages/directories and check whether their callers handle the exceptions passed to
     the decorator. Optionally accepts mypy options.
     """
-    args: Arguments = _make_arg_parser(cli.__doc__).parse_args(args)  # type: ignore
+    try:
+        args: Arguments = _make_arg_parser(cli.__doc__).parse_args(args)  # type: ignore
+        args.help_requested = False
+    except SystemExit:  # pragma: no cover
+        args = Arguments(help_requested=True)
+    if args.version or args.help_requested:  # pragma: no cover
+        return CLIResult(args, [], [], [])
+
     modules, package_roots = _collect_modules_and_package_roots(args)
     cache = _make_cache(modules, package_roots, mypy_options)
-    contracts = _collect_contracts(modules, cache, args) if modules else []
-    results = _check_contracts(contracts, modules, cache, args) if contracts else []
+    contracts = ContractCollector(modules, cache).contracts if modules else []
+    results = ContractChecker(contracts, modules, cache).results if contracts else []
     return CLIResult(args, modules, contracts, results)

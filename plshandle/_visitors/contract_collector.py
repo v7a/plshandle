@@ -10,7 +10,7 @@ from mypy_extensions import mypyc_attr
 
 from plshandle._cache import MypyCache
 from plshandle._visitors.alias_resolver import AliasResolver
-from plshandle._utils.resolve_contract import resolve_contract
+from plshandle._ast_utils.resolve_contract import resolve_contract
 
 
 @dataclass(frozen=True, repr=False)

@@ -6,8 +6,8 @@ from mypy.types import Type
 from mypy.nodes import Context, CallExpr, Expression, Decorator, TypeInfo
 
 from plshandle._visitors.alias_resolver import AliasResolver
-from plshandle._utils.resolve_called_functions import resolve_called_functions
-from plshandle._utils.resolve_exception_types import resolve_exception_types
+from plshandle._ast_utils.resolve_called_functions import resolve_called_functions
+from plshandle._ast_utils.resolve_exception_types import resolve_exception_types
 
 
 _PLSHANDLE_QUALIFIER = "plshandle._decorator.plshandle"

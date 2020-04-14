@@ -12,9 +12,9 @@ from plshandle._cache import MypyCache
 from plshandle._visitors.contract_collector import Contract
 from plshandle._visitors.alias_resolver import AliasResolver
 from plshandle._visitors.scope_tracker import ScopeTracker
-from plshandle._utils.resolve_called_functions import resolve_called_functions
-from plshandle._utils.resolve_contract import resolve_contract
-from plshandle._utils.resolve_handled_types import resolve_handled_types
+from plshandle._ast_utils.resolve_called_functions import resolve_called_functions
+from plshandle._ast_utils.resolve_contract import resolve_contract
+from plshandle._ast_utils.resolve_handled_types import resolve_handled_types
 
 
 @dataclass(frozen=True, repr=False)

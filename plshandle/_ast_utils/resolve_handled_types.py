@@ -5,7 +5,7 @@ from typing import Dict, Iterator
 from mypy.types import Type
 from mypy.nodes import Expression, TypeInfo, TryStmt
 
-from plshandle._utils.resolve_exception_types import resolve_exception_types
+from plshandle._ast_utils.resolve_exception_types import resolve_exception_types
 
 
 def resolve_handled_types(

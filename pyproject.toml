@@ -2,7 +2,7 @@
 line-length = 100
 
 [tool.coverage.run]
-omit = ["plshandle/tests/**", "plshandle/__main__.py", "plshandle/_decorator.py"]
+omit = ["plshandle/tests/**", "plshandle/__main__.py", "plshandle/_decorator.py", "plshandle/_version.py", "plshandle/_cli_utils/**"]
 
 [tool.coverage.report]
 exclude_lines = [
