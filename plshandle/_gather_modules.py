@@ -39,12 +39,13 @@ def _gather_module_infos(modules: Iterable[str]) -> Iterator[BuildSource]:
             yield BuildSource(spec.origin, spec.name, None, None)
 
 
-def _gather_modules(
+def gather_modules(
     directories: Iterable[str],
     packages: Iterable[str],
     modules: Iterable[str],
     package_roots: List[str],
 ):
+    """Gather modules from directories and packages."""
     all_packages = list(packages)
     for directory in directories:
         native_dir = str(Path(directory))

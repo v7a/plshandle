@@ -20,9 +20,9 @@ def collect_errors(output: CLIResult) -> Iterator[str]:
         (result, report, unhandled)
         for result in output.results
         for report in result.reports
-        for unhandled in _get_unhandled(report.results, output.args.strict)
+        for unhandled in _get_unhandled(report.results, output.config.strict)
     ]:
-        if unhandled.is_handled and output.args.strict and unhandled.level != 1:
+        if unhandled.is_handled and output.config.strict and unhandled.level != 1:
             msg = "{path}:{line}: {exc} not handled at level 1"
         else:
             msg = "{path}:{line}: Violated contract of {func}. Not handled nor propagated {exc}"

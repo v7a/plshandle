@@ -6,7 +6,7 @@ from plshandle._cli_utils.collect_errors import _get_unhandled
 
 def determine_exit_code(output: CLIResult):
     """Determine the exit code from CLI arguments and check results."""
-    if output.args.version or output.args.help_requested:
+    if output.config.version or output.config.help_requested:
         return 20
     if not output.modules:
         return 10
@@ -15,7 +15,7 @@ def determine_exit_code(output: CLIResult):
     if not any(result.reports for result in output.results):
         return 12
     if any(
-        _get_unhandled(report.results, output.args.strict)
+        _get_unhandled(report.results, output.config.strict)
         for result in output.results
         for report in result.reports
     ):

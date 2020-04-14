@@ -16,13 +16,13 @@ from plshandle._version import __version__
 if __name__ == "__main__":
     cli_output = cli(sys.argv[1:])
 
-    if cli_output.args.verbose:
+    if cli_output.config.verbose:
         for msg in collect_verbose_messages(cli_output):
             print(msg)
 
-    if cli_output.args.version:
+    if cli_output.config.version:
         print(build_version())
-    elif cli_output.args.help_requested:
+    elif cli_output.config.help_requested:
         pass  # prevent printing the rest if help was requested
     elif not cli_output.modules:
         print("error: No modules found", file=sys.stderr)
@@ -31,7 +31,7 @@ if __name__ == "__main__":
     elif not any(result.reports for result in cli_output.results):
         print("error: No contracts checked", file=sys.stderr)
 
-    if cli_output.args.json:
+    if cli_output.config.json:
         print(build_json(cli_output.results))
 
     for msg in collect_errors(cli_output):

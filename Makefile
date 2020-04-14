@@ -9,4 +9,4 @@ format:
 	black plshandle
 
 check: lint test format
-	@echo "Everything seems fine, ready to commit."
+	@echo Everything seems fine, ready to commit.

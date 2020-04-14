@@ -62,6 +62,11 @@ def foo():
   # either annotate return type or assign to a var with a type annotation
   ```
 
+### Warning Windows users
+Subclassing mypy types seems not to be possible with the binary distribution of mypy for Windows,
+even though the mypy attributes doing so are set. Windows users must install the source distribution
+of mypy to run this tool.
+
 ### Before committing
 
 _Download development dependencies_

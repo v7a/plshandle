@@ -3,14 +3,15 @@
 from argparse import ArgumentParser
 from dataclasses import dataclass
 import sys
-from typing import Iterable, Optional, List, Sequence, Tuple
+from typing import Optional, List, Sequence, Tuple
 
 from mypy.options import Options
 
 from plshandle._cache import MypyCache
+from plshandle._cli_utils.config import read_and_merge_config, Config
 from plshandle._visitors.contract_checker import ContractChecker, CheckResult
 from plshandle._visitors.contract_collector import ContractCollector, Contract
-from plshandle._gather_modules import _gather_modules, BuildSource
+from plshandle._gather_modules import gather_modules, BuildSource
 
 
 def _make_arg_parser(description: Optional[str] = None):
@@ -29,6 +30,10 @@ def _make_arg_parser(description: Optional[str] = None):
     )
     parser.add_argument(
         "-m", "--module", action="append", help="additionally include these modules in the check"
+    )
+    parser.add_argument(
+        "--config",
+        help="use a config file (CLI args override/extend it) (default: ./pyproject.toml)",
     )
     parser.add_argument(
         "--strict",
@@ -55,35 +60,21 @@ def _make_arg_parser(description: Optional[str] = None):
 
 
 @dataclass(frozen=True)
-class Arguments:
-    """Parsed arguments."""
-
-    directory: Optional[Iterable[str]] = None
-    package: Optional[Iterable[str]] = None
-    module: Optional[Iterable[str]] = None
-    strict: bool = False  #: try block + handlers must be one level above call
-    json: bool = False  #: print checked contracts as JSON array to stdout
-    verbose: bool = False  #: verbose output
-    version: bool = False
-    help_requested: bool = False
-
-
-@dataclass(frozen=True)
 class CLIResult:
     """All arguments, collected modules, contracts and check results."""
 
-    args: Arguments
+    config: Config
     modules: Sequence[BuildSource]
     contracts: Sequence[Contract]
     results: Sequence[CheckResult]
 
 
-def _collect_modules_and_package_roots(args: Arguments) -> Tuple[Sequence[BuildSource], List[str]]:
+def _collect_modules_and_package_roots(args: Config) -> Tuple[Sequence[BuildSource], List[str]]:
     sys.path[:0] = list(args.directory or [])  # be able to find module specs
 
     package_roots: List[str] = []
     modules = tuple(
-        _gather_modules(args.directory or [], args.package or [], args.module or [], package_roots)
+        gather_modules(args.directory or [], args.package or [], args.module or [], package_roots)
     )
     return modules, package_roots
 
@@ -101,15 +92,15 @@ def cli(args, mypy_options: Options = Options()):
     the decorator. Optionally accepts mypy options.
     """
     try:
-        args: Arguments = _make_arg_parser(cli.__doc__).parse_args(args)  # type: ignore
-        args.help_requested = False
+        config = read_and_merge_config(_make_arg_parser(cli.__doc__).parse_args(args))
+        config.help_requested = False
     except SystemExit:  # pragma: no cover
-        args = Arguments(help_requested=True)
-    if args.version or args.help_requested:  # pragma: no cover
-        return CLIResult(args, [], [], [])
+        config = Config(help_requested=True)
+    if config.version or config.help_requested:  # pragma: no cover
+        return CLIResult(config, [], [], [])
 
-    modules, package_roots = _collect_modules_and_package_roots(args)
+    modules, package_roots = _collect_modules_and_package_roots(config)
     cache = _make_cache(modules, package_roots, mypy_options)
     contracts = ContractCollector(modules, cache).contracts if modules else []
     results = ContractChecker(contracts, modules, cache).results if contracts else []
-    return CLIResult(args, modules, contracts, results)
+    return CLIResult(config, modules, contracts, results)

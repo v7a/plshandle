@@ -1,0 +1,4 @@
+[tool.plshandle]
+packages = ["test_unions"]
+strict = true
+verbose = true

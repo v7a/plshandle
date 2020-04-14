@@ -12,6 +12,7 @@ def _verbose_list(prefix: str, items: Iterable):
 
 def collect_verbose_messages(output: CLIResult) -> Iterator[str]:
     """Collect verbose messages from CLI output."""
+    yield "CLI args merged with config: {}\n".format(output.config)
     yield _verbose_list("sys.path", sys.path)
     yield _verbose_list("collected modules", output.modules)
     yield _verbose_list("collected contracts", output.contracts)
