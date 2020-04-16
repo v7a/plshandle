@@ -2,3 +2,5 @@ coverage[toml] >= 5.0.3
 pytest-cov >= 2.8.1
 pylint >= 2.4.4
 black >= 19.10b0
+sphinx >= 3.0.1
+sphinx-rtd-theme >= 0.4.3
