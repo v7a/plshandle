@@ -10,3 +10,6 @@ format:
 
 check: lint test format
 	@echo Everything seems fine, ready to commit.
+
+docs:
+	sphinx-build -M html doc ../plshandle-doc
