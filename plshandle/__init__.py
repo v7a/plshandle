@@ -6,3 +6,4 @@ from ._cli import cli
 from ._decorator import plshandle
 from ._visitors.contract_collector import Contract
 from ._visitors.contract_checker import CheckResult, ContractReport, ExceptionResult
+from ._version import __version__

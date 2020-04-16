@@ -4,3 +4,8 @@ __pycache__
 .coverage
 .sandbox
 .pytest_cache
+
+# packaging
+*.egg-info
+build
+dist

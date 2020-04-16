@@ -24,52 +24,20 @@ It is also possible to propagate errors, similar to Java:
 def foo():
     return get_item(0)  # o.k., KeyError is propagated, caller's responsibility to handle it
 ```
-
-### Things to consider
-- This tool performs static analysis only. As such, dynamic constructs are most likely not supported:
-  ```py
-  @plshandle(KeyError)
-  def foo():
-      pass
-  def bar(callback):
-      callback()  # nothing reported
-  bar(foo)
-  ```
-- As mypy is the base for this tool, anything related to types that does not work there will not work
-  with this tool either. You are strongly advised to heavily type-annotate your code to allow seamless
-  type resolution:
-  ```py
-  class Base:
-      def __init__(self):
-          pass
-      @plshandle(TypeError)
-      def __call__(self):
-          pass
-  class Derived(Base):
-      @plshandle(TypeError)
-      def foo(self):
-          pass
-
-  obj = Derived()
-  obj.foo()  # nothing reported, mypy infers obj as type "Any"
-  obj: Derived = Derived()
-  obj.foo()  # o.k., mypy infers obj as type "Derived"
-
-  def bar():
-      return Base()
-
-  bar()()  # nothing reported, mypy infers expression bar() as type "Any"
-  # either annotate return type or assign to a var with a type annotation
-  ```
-
-### Warning Windows users
-Subclassing mypy types seems not to be possible with the binary distribution of mypy for Windows,
-even though the mypy attributes doing so are set. Windows users must install the source distribution
-of mypy to run this tool.
+Note: This tool performs static analysis only. As such, dynamic constructs are most likely not supported:
+```py
+@plshandle(KeyError)
+def foo():
+    pass
+def bar(callback):
+    callback()  # nothing reported
+bar(foo)
+```
+Refer to https://plshandle.readthedocs.io for more in-depth examples.
 
 ### Before committing
 
-_Download development dependencies_
+_Fetch development dependencies_
 ```
 pip -r requirements-dev.txt
 ```
