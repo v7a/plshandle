@@ -1,12 +1,9 @@
 import setuptools
 
-from plshandle import __version__
-
-
 with open("README.md", "r") as readme:
     setuptools.setup(
         name="plshandle",
-        version=__version__,
+        version="0.2",
         author="v7a",
         long_description=readme.read(),
         long_description_content_type="text/markdown",
